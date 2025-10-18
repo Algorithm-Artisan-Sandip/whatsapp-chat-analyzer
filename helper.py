@@ -36,7 +36,7 @@ def create_wordcloud(selected_user, df):
     if selected_user != 'Overall':
         df = df[df['user'] == selected_user]
 
-    with open('stop_hinglish.txt', 'r', encoding='utf-8') as f:
+    with open('stop_words.txt', 'r', encoding='utf-8') as f:
         stop_words = f.read()
 
     temp = df[df['user'] != 'group_notification']
@@ -62,7 +62,7 @@ def most_common_words(selected_user, df):
     
     temp = df[df['user'] != 'group_notification']
     temp = temp[temp['message'] != '<Media omitted>\n']
-    with open('stop_hinglish.txt', 'r', encoding='utf-8') as f:
+    with open('stop_words.txt', 'r', encoding='utf-8') as f:
         stop_words = f.read()
     words = []
     for message in temp['message']:
@@ -118,3 +118,4 @@ def activity_heatmap(selected_user, df):
         df = df[df['user'] == selected_user]
     user_heatmap = df.pivot_table(index='day_name', columns='period', values='message', aggfunc='count').fillna(0)
     return user_heatmap
+
