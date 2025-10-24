@@ -191,11 +191,12 @@ st.sidebar.markdown(
     <div class='sidebar-footer'>
         <div style='text-align: center; font-size: 14px;'>
             Made with ❤️ by 
-            <b><a href='https://www.linkedin.com/in/sandip-pramanik' target='_blank' style='text-decoration: none; color: #ff4b4b; font-weight: bold;'>
+            <b><a href='https://www.linkedin.com/in/pramaniksandip/' target='_blank' style='text-decoration: none; color: #ff4b4b; font-weight: bold;'>
                 Sandip
             </a></b>
         </div>
     </div>
     """,
     unsafe_allow_html=True
+
 )
