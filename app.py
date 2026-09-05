@@ -38,9 +38,14 @@ if uploaded_file is not None:
     data = bytes_data.decode("utf-8")
     df = preprocessor.preprocessor(data)
 
+    if df.empty:
+        st.error("Could not parse any messages from this file. Export the chat from WhatsApp as a .txt file (without media) and try again.")
+        st.stop()
+
     # fetch unique users
     user_list = df['user'].unique().tolist()
-    user_list.remove('group_notification')
+    if 'group_notification' in user_list:
+        user_list.remove('group_notification')
     user_list.sort()
     user_list.insert(0, "Overall")
     selected_user = st.sidebar.selectbox("Show analysis for", user_list)
