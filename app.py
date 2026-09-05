@@ -172,22 +172,25 @@ if uploaded_file is not None:
         emoji_df = helper.emoji_helper(selected_user, df)
         st.title("Emoji Analysis")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.dataframe(emoji_df)
+        if emoji_df.empty:
+            st.info("No emojis found for this selection.")
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.dataframe(emoji_df)
 
-        with col2:
-            top_emojis = emoji_df.head(10)
-            fig, ax = plt.subplots(figsize=(8, 8))
-            ax.pie(
-                top_emojis['count'],
-                labels=top_emojis['emoji'],
-                autopct="%0.2f%%",
-                startangle=90,
-                textprops={'fontsize': 14}
-            )
-            ax.axis('equal')
-            st.pyplot(fig)
+            with col2:
+                top_emojis = emoji_df.head(10)
+                fig, ax = plt.subplots(figsize=(8, 8))
+                ax.pie(
+                    top_emojis['count'],
+                    labels=top_emojis['emoji'],
+                    autopct="%0.2f%%",
+                    startangle=90,
+                    textprops={'fontsize': 14}
+                )
+                ax.axis('equal')
+                st.pyplot(fig)
 
 
 # ----- FIXED SIDEBAR FOOTER -----
