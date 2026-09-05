@@ -1,0 +1,72 @@
+12/01/2026, 9:04 am - Messages and calls are end-to-end encrypted. Only people in this chat can read, listen to, or share them.
+12/01/2026, 9:04 am - Alice Kumar created group "Campus Project Hub"
+12/01/2026, 9:05 am - Alice Kumar added Bob Chen
+12/01/2026, 9:05 am - Alice Kumar added Devansh Srivastava
+12/01/2026, 9:05 am - Alice Kumar: Morning team ☀️ Kickoff for the analyzer today?
+12/01/2026, 9:07 am - Bob Chen: Yes! I can take the Streamlit UI. https://streamlit.io
+12/01/2026, 9:08 am - Devansh Srivastava: I'll handle pandas cleaning. Excited 🔥
+12/01/2026, 9:10 am - Alice Kumar: Perfect. Let's keep a shared checklist.
+12/01/2026, 9:12 am - Bob Chen: <Media omitted>
+12/01/2026, 11:40 am - Devansh Srivastava: Date parsing is messy on pandas 3. Need format= mixed fallback.
+12/01/2026, 11:45 am - Alice Kumar: Good catch. Can you add tests for Android and iOS exports?
+12/01/2026, 11:52 am - Devansh Srivastava: On it. Also Unicode narrow spaces 😅
+12/01/2026, 1:20 pm - Bob Chen: Pushed a first sidebar draft. Feedback welcome!
+12/01/2026, 1:28 pm - Alice Kumar: Looks clean. Love the WhatsApp green.
+12/01/2026, 10:15 pm - Devansh Srivastava: Night coding session. Heatmap is coming together 🌙
+12/01/2026, 10:18 pm - Bob Chen: Same. Word cloud looks decent already.
+13/01/2026, 8:30 am - Alice Kumar: Daily standup: blockers?
+13/01/2026, 8:33 am - Bob Chen: None. I'll polish metrics today.
+13/01/2026, 8:35 am - Devansh Srivastava: Need a sample chat file for demos.
+13/01/2026, 10:02 am - Alice Kumar: This message was deleted
+13/01/2026, 10:04 am - Alice Kumar: Ignore that, wrong paste 😂
+13/01/2026, 12:10 pm - Bob Chen: Emoji pie chart crashes on empty data. Fixing now.
+13/01/2026, 12:12 pm - Devansh Srivastava: Nice, I hit that too.
+13/01/2026, 6:40 pm - Alice Kumar: Great progress. Let's ship a usable MVP tonight.
+14/01/2026, 12:20 am - Bob Chen: Can't sleep. Tweaking CSS 😴
+14/01/2026, 12:25 am - Devansh Srivastava: Same here. Response-time stats would be a cool resume bullet.
+14/01/2026, 9:01 am - Alice Kumar: Love that idea. Add sentiment too if it's lightweight.
+14/01/2026, 9:06 am - Bob Chen: VADER is pip-installable and works with emojis 🙂
+14/01/2026, 9:09 am - Devansh Srivastava: Let's do VADER then. Keep nltk out.
+14/01/2026, 3:33 pm - Alice Kumar: Shared the Figma notes: https://www.figma.com
+14/01/2026, 3:40 pm - Bob Chen: <Media omitted>
+15/01/2026, 10:11 am - Devansh Srivastava: Weekend check-in. Parser now supports 24h timestamps.
+15/01/2026, 10:20 am - Alice Kumar: Amazing. Thank you!! 💚
+15/01/2026, 7:05 pm - Bob Chen: I wrote a long note on architecture: Streamlit tabs for Overview, Activity, Members, Content, Sentiment, Insights, and Explorer. Each tab gets a focused job so the page does not feel like one endless scroll. Plotly gives hover details which matplotlib never did. This should read well on a resume because it shows product thinking, not only charts.
+16/01/2026, 8:45 am - Alice Kumar: Read the architecture note. Fully agree.
+16/01/2026, 8:50 am - Devansh Srivastava: I can own Insights: streaks, starters, reply speed.
+16/01/2026, 2:12 pm - Bob Chen: Deployed a test app on Streamlit Cloud.
+16/01/2026, 2:18 pm - Alice Kumar: Link?
+16/01/2026, 2:19 pm - Bob Chen: https://github.com/Algorithm-Artisan-Sandip/whatsapp-chat-analyzer
+17/01/2026, 9:30 pm - Devansh Srivastava: Monday energy 💪 let's crush remaining bugs.
+17/01/2026, 9:36 pm - Alice Kumar: Yes. Empty pie, datetime, and group_notification remove.
+17/01/2026, 9:40 pm - Bob Chen: I already patched the first two locally.
+18/01/2026, 9:00 am - Alice Kumar: Standup. Demo for faculty is Friday.
+18/01/2026, 9:03 am - Devansh Srivastava: I'll prepare a 2-minute walkthrough.
+18/01/2026, 9:05 am - Bob Chen: I'll record screenshots.
+18/01/2026, 11:22 am - Alice Kumar: Please don't forget export to CSV. Recruiters love practical extras.
+18/01/2026, 11:25 am - Bob Chen: Added download buttons.
+18/01/2026, 4:48 pm - Devansh Srivastava: Search in Explorer tab is surprisingly useful for our own group 😂
+19/01/2026, 7:55 am - Alice Kumar: Early gym then coding. Morning person checking in.
+19/01/2026, 12:04 pm - Bob Chen: <Media omitted>
+19/01/2026, 12:06 pm - Bob Chen: Poster draft. Thoughts?
+19/01/2026, 12:10 pm - Alice Kumar: Title is strong. Maybe more whitespace.
+19/01/2026, 12:14 pm - Devansh Srivastava: Looks professional. Great work Bob.
+20/01/2026, 11:40 pm - Devansh Srivastava: Late night refactor of heatmap periods.
+20/01/2026, 11:50 pm - Alice Kumar: Sleep soon 😅 but thank you.
+21/01/2026, 10:15 am - Bob Chen: This is going to be a solid portfolio project.
+21/01/2026, 10:18 am - Alice Kumar: Agreed. Clean code + real insights + nice UI.
+21/01/2026, 10:22 am - Devansh Srivastava: Shipping it 🚀
+22/01/2026, 1:01 pm - Alice Kumar: Faculty liked the sentiment timeline. Nice job everyone.
+22/01/2026, 1:08 pm - Bob Chen: So happy 😄😄
+22/01/2026, 1:10 pm - Devansh Srivastava: Team win. Let's write the README properly.
+23/01/2026, 6:20 pm - Alice Kumar: Final polish tonight?
+23/01/2026, 6:22 pm - Bob Chen: Yes.
+23/01/2026, 6:23 pm - Devansh Srivastava: Yes. Also add a sample chat so anyone can try the app.
+24/01/2026, 9:10 am - Alice Kumar: Sample chat is in. You're the best 🙌
+24/01/2026, 9:12 am - Bob Chen: Celebratory sticker incoming
+24/01/2026, 9:13 am - Bob Chen: <Media omitted>
+24/01/2026, 8:44 pm - Devansh Srivastava: If this helps even one student explain their project in an interview, worth it.
+24/01/2026, 8:50 pm - Alice Kumar: It will. Proud of this ❤️
+25/01/2026, 3:02 pm - Bob Chen: One more pass on empty states so the live demo never crashes.
+25/01/2026, 3:06 pm - Devansh Srivastava: Done. Pie, wordcloud, heatmap all guarded.
+25/01/2026, 3:09 pm - Alice Kumar: You're amazing. Closing the loop. Thanks team 🌟

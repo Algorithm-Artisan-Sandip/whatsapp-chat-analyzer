@@ -33,6 +33,16 @@ _DATE_FORMATS = (
     "%m/%d/%y, %H:%M:%S",
 )
 
+_DELETED_RE = re.compile(
+    r"(this message was deleted|you deleted this message)",
+    re.IGNORECASE,
+)
+_MEDIA_ONLY_RE = re.compile(
+    r"(<media omitted>|image omitted|video omitted|audio omitted|"
+    r"sticker omitted|gif omitted|document omitted|contact card omitted)",
+    re.IGNORECASE,
+)
+
 
 def _clean_timestamps(series: pd.Series) -> pd.Series:
     return (
@@ -46,11 +56,7 @@ def _clean_timestamps(series: pd.Series) -> pd.Series:
 
 
 def _parse_dates(series: pd.Series) -> pd.Series:
-    """Parse WhatsApp timestamps without deprecated pandas kwargs.
-
-    ``infer_datetime_format`` was removed in pandas 2.2+ and raises TypeError
-    on Streamlit Cloud / current pandas releases.
-    """
+    """Parse WhatsApp timestamps without deprecated pandas kwargs."""
     cleaned = _clean_timestamps(series)
     parsed = pd.Series(pd.NaT, index=cleaned.index, dtype="datetime64[ns]")
 
@@ -90,15 +96,30 @@ def preprocessor(data):
     for message in df["user_message"]:
         entry = re.split(r"([\w\W]+?):\s", message, maxsplit=1)
         if entry[1:]:
-            users.append(entry[1])
+            users.append(entry[1].strip())
             message_bodies.append(entry[2])
         else:
             users.append("group_notification")
             message_bodies.append(entry[0])
 
     df["user"] = users
-    df["message"] = message_bodies
+    df["message"] = (
+        pd.Series(message_bodies, index=df.index)
+        .astype(str)
+        .str.replace("\r", "", regex=False)
+        .str.strip()
+    )
     df.drop(columns=["user_message"], inplace=True)
+
+    df["is_media"] = df["message"].str.match(_MEDIA_ONLY_RE, na=False)
+    df["is_deleted"] = df["message"].str.match(_DELETED_RE, na=False)
+    df["is_system"] = df["user"].eq("group_notification")
+    text_mask = ~(df["is_media"] | df["is_deleted"] | df["is_system"])
+    df["word_count"] = 0
+    df.loc[text_mask, "word_count"] = (
+        df.loc[text_mask, "message"].str.split().str.len().fillna(0).astype(int)
+    )
+    df["char_count"] = df["message"].str.len().fillna(0).astype(int)
 
     df["year"] = df["date"].dt.year
     df["month_num"] = df["date"].dt.month
@@ -125,4 +146,4 @@ def preprocessor(data):
         ordered=True,
     )
 
-    return df
+    return df.sort_values("date").reset_index(drop=True)
