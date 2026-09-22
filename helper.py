@@ -216,8 +216,15 @@ def activity_heatmap(selected_user, df):
     view = filter_user(df, selected_user)
     if view.empty:
         return pd.DataFrame()
-    heatmap = view.pivot_table(index="day_name", columns="period", values="message", aggfunc="count").fillna(0)
-    return heatmap
+    heatmap = view.pivot_table(
+        index="day_name",
+        columns="period",
+        values="message",
+        aggfunc="count",
+        observed=True,
+        fill_value=0,
+    )
+    return heatmap.astype(float)
 
 
 def hourly_activity(selected_user, df):

@@ -195,18 +195,21 @@ def render_activity(view_user, df):
 
     heatmap = helper.activity_heatmap(view_user, df)
     st.subheader("Weekly activity heatmap")
-    numeric_sum = 0 if heatmap.empty else pd.to_numeric(heatmap.to_numpy().ravel(), errors="coerce").fillna(0).sum()
-    if heatmap.empty or numeric_sum == 0:
+    if heatmap.empty:
         st.info("Not enough activity to build a heatmap.")
     else:
-        fig = px.imshow(
-            heatmap.astype(float),
-            aspect="auto",
-            color_continuous_scale="YlOrBr",
-            title="Day vs hour-range intensity",
-        )
-        fig.update_layout(xaxis_title="Hour range", yaxis_title="Day")
-        st.plotly_chart(style_fig(fig), use_container_width=True)
+        values = pd.to_numeric(pd.Series(heatmap.to_numpy().ravel()), errors="coerce").fillna(0)
+        if float(values.sum()) == 0:
+            st.info("Not enough activity to build a heatmap.")
+        else:
+            fig = px.imshow(
+                heatmap.fillna(0).astype(float),
+                aspect="auto",
+                color_continuous_scale="YlOrBr",
+                title="Day vs hour-range intensity",
+            )
+            fig.update_layout(xaxis_title="Hour range", yaxis_title="Day")
+            st.plotly_chart(style_fig(fig), use_container_width=True)
 
 
 def render_members(view_user, df):
