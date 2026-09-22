@@ -48,6 +48,11 @@ st.markdown(
 )
 
 
+def style_fig(fig):
+    fig.update_layout(**PLOTLY_LAYOUT)
+    return fig
+
+
 def safe_tab(title, render_fn, *args):
     """Streamlit runs every tab body on each rerun; isolate failures so one chart cannot blank the app."""
     try:
@@ -190,11 +195,12 @@ def render_activity(view_user, df):
 
     heatmap = helper.activity_heatmap(view_user, df)
     st.subheader("Weekly activity heatmap")
-    if heatmap.empty or heatmap.values.sum() == 0:
+    numeric_sum = 0 if heatmap.empty else pd.to_numeric(heatmap.to_numpy().ravel(), errors="coerce").fillna(0).sum()
+    if heatmap.empty or numeric_sum == 0:
         st.info("Not enough activity to build a heatmap.")
     else:
         fig = px.imshow(
-            heatmap,
+            heatmap.astype(float),
             aspect="auto",
             color_continuous_scale="YlOrBr",
             title="Day vs hour-range intensity",
@@ -526,7 +532,10 @@ elif df is None and source == "Upload export" and uploaded_file is None:
 elif df is None:
     st.error("Could not parse any messages. Export the chat as a .txt file (without media) and try again.")
 else:
-    user_list = sorted(u for u in df["user"].unique() if u != "group_notification")
+    user_list = sorted(
+        str(u) for u in df["user"].dropna().unique()
+        if str(u) not in ("group_notification", "nan")
+    )
     with st.sidebar:
         selected_user = st.selectbox("Analyze", ["Overall"] + user_list)
         min_day = df["only_date"].min()
