@@ -183,8 +183,14 @@ def emoji_helper(selected_user, df):
 
 def monthly_timeline(selected_user, df):
     view = filter_user(df, selected_user)
-    timeline = view.groupby(["year", "month_num", "month"], observed=False).count()["message"].reset_index()
-    timeline["time"] = timeline["month"] + " " + timeline["year"].astype(str)
+    if view.empty:
+        return pd.DataFrame(columns=["year", "month_num", "month", "message", "time"])
+    timeline = (
+        view.groupby(["year", "month_num", "month"], observed=True)
+        .size()
+        .reset_index(name="message")
+    )
+    timeline["time"] = timeline["month"].astype(str) + " " + timeline["year"].astype(str)
     return timeline.sort_values(["year", "month_num"])
 
 

@@ -48,9 +48,13 @@ st.markdown(
 )
 
 
-def style_fig(fig):
-    fig.update_layout(**PLOTLY_LAYOUT)
-    return fig
+def safe_tab(title, render_fn, *args):
+    """Streamlit runs every tab body on each rerun; isolate failures so one chart cannot blank the app."""
+    try:
+        render_fn(*args)
+    except Exception as exc:
+        st.error(f"{title} could not render ({type(exc).__name__}). Other tabs still work.")
+        st.caption(str(exc))
 
 
 def load_chat(raw_text):
@@ -544,23 +548,23 @@ else:
             ["Overview", "Activity", "Members", "Content", "Sentiment", "Insights", "AI Recap", "Topics", "Explorer"]
         )
         with tabs[0]:
-            render_overview(selected_user, df)
+            safe_tab("Overview", render_overview, selected_user, df)
         with tabs[1]:
-            render_activity(selected_user, df)
+            safe_tab("Activity", render_activity, selected_user, df)
         with tabs[2]:
-            render_members(selected_user, df)
+            safe_tab("Members", render_members, selected_user, df)
         with tabs[3]:
-            render_content(selected_user, df)
+            safe_tab("Content", render_content, selected_user, df)
         with tabs[4]:
-            render_sentiment(selected_user, df)
+            safe_tab("Sentiment", render_sentiment, selected_user, df)
         with tabs[5]:
-            render_insights(selected_user, df)
+            safe_tab("Insights", render_insights, selected_user, df)
         with tabs[6]:
-            render_ai_recap(selected_user, df)
+            safe_tab("AI Recap", render_ai_recap, selected_user, df)
         with tabs[7]:
-            render_topics(selected_user, df)
+            safe_tab("Topics", render_topics, selected_user, df)
         with tabs[8]:
-            render_explorer(selected_user, df)
+            safe_tab("Explorer", render_explorer, selected_user, df)
 
 st.sidebar.markdown(
     """
