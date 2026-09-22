@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
-import preprocessor, helper
+import preprocessor, helper, ai_insights
 
 st.set_page_config(
     page_title="WhatsApp Chat Analyzer",
@@ -225,6 +225,12 @@ def render_members(view_user, df):
         fig.update_traces(fill="toself")
         st.plotly_chart(style_fig(fig), use_container_width=True)
 
+    _, pairs = ai_insights.member_similarity(df)
+    if view_user == "Overall" and pairs is not None and not pairs.empty:
+        st.subheader("Behavioral style similarity")
+        st.caption("Cosine similarity on volume, length, media, emojis, reply speed, mood, and night-owl share — not personality.")
+        st.dataframe(pairs.head(10), use_container_width=True, hide_index=True)
+
 
 def render_content(view_user, df):
     col1, col2 = st.columns([1.2, 1])
@@ -360,6 +366,112 @@ def render_explorer(view_user, df):
     )
 
 
+def render_ai_recap(view_user, df):
+    st.caption("Local extractive AI — TF-IDF retrieval + VADER + rules. No API key, nothing leaves this session.")
+    recap = ai_insights.extractive_recap(df, view_user)
+    st.subheader("Auto recap")
+    for bullet in recap["bullets"]:
+        st.markdown(f"- {bullet}")
+    if recap["quotes"] is not None and not recap["quotes"].empty:
+        st.subheader("High-signal messages")
+        st.caption("Ranked by TF-IDF mass (distinctive wording), not by likes.")
+        show = recap["quotes"].copy()
+        show["date"] = pd.to_datetime(show["date"]).dt.strftime("%Y-%m-%d %H:%M")
+        st.dataframe(show, use_container_width=True, hide_index=True)
+
+    st.subheader("Ask the chat")
+    st.caption("Fact questions (who talks most, mood, reply speed) use metrics. Other questions retrieve similar messages.")
+    question = st.text_input("Question", placeholder="e.g. Who starts conversations? What did we say about heatmap?")
+    if question.strip():
+        answer, cites = ai_insights.answer_question(df, question, view_user)
+        st.success(answer)
+        if cites is not None and not cites.empty:
+            st.dataframe(cites, use_container_width=True, hide_index=True)
+
+    left, right = st.columns(2)
+    with left:
+        st.subheader("Tension over time")
+        daily_t, spikes = ai_insights.tension_timeline(df, view_user)
+        if daily_t.empty:
+            st.info("Not enough text to estimate tension.")
+        else:
+            fig = px.area(daily_t, x="date", y="tension", title="")
+            fig.update_traces(line_color="#ff6b6b", fillcolor="rgba(255,107,107,0.25)")
+            st.plotly_chart(style_fig(fig), use_container_width=True)
+            if not spikes.empty:
+                spikes = spikes.copy()
+                spikes["date"] = pd.to_datetime(spikes["date"]).dt.strftime("%Y-%m-%d %H:%M")
+                st.dataframe(spikes, use_container_width=True, hide_index=True)
+    with right:
+        st.subheader("Activity anomalies")
+        st.caption("Days with |z-score| ≥ 2 vs the chat’s own daily average.")
+        anomalies = recap["anomalies"]
+        if anomalies.empty or "z_score" not in anomalies:
+            st.info("Need more days to flag outliers.")
+        else:
+            fig = px.scatter(anomalies, x="date", y="message", color="flag", title="")
+            st.plotly_chart(style_fig(fig), use_container_width=True)
+            flagged = anomalies[anomalies["flag"] != "Normal"]
+            if flagged.empty:
+                st.info("No strong bursts or quiet days in this range.")
+            else:
+                st.dataframe(flagged, use_container_width=True, hide_index=True)
+
+    st.subheader("Writing-script mix")
+    st.caption("Lightweight script detection (Latin, Devanagari, Bangla, …). VADER is English-oriented.")
+    langs = ai_insights.language_mix(df, view_user)
+    if langs.empty:
+        st.info("No text for language mix.")
+    else:
+        fig = px.pie(langs, names="script", values="messages", hole=0.4)
+        st.plotly_chart(style_fig(fig), use_container_width=True)
+
+
+def render_topics(view_user, df):
+    st.caption("Unsupervised NMF topics and TF-IDF semantic search. Runs on-device, no embeddings API.")
+    index = ai_insights.build_index(df, view_user)
+    if not index:
+        st.info("Need more alphabetic text (after stopwords) to fit topics.")
+        return
+
+    topics, timeline, examples = ai_insights.topic_model(index)
+    if topics.empty:
+        st.info("Corpus is too small for NMF. Try Overall or a wider date range.")
+    else:
+        st.subheader("Discovered topics")
+        st.dataframe(topics, use_container_width=True, hide_index=True)
+        if not timeline.empty:
+            fig = px.area(timeline, x="day", y="messages", color="topic", title="Topic volume over time")
+            st.plotly_chart(style_fig(fig), use_container_width=True)
+        if not examples.empty:
+            st.subheader("Example messages")
+            ex = examples.copy()
+            ex["date"] = pd.to_datetime(ex["date"]).dt.strftime("%Y-%m-%d %H:%M")
+            st.dataframe(ex, use_container_width=True, hide_index=True)
+
+    st.subheader("Semantic search")
+    query = st.text_input("Find similar meaning", placeholder="e.g. deadline, shipping the app, late night work")
+    if query.strip():
+        hits = ai_insights.semantic_search(index, query, k=10)
+        if hits.empty:
+            st.info("No similar messages. Try a more specific phrase.")
+        else:
+            hits = hits.copy()
+            hits["date"] = pd.to_datetime(hits["date"]).dt.strftime("%Y-%m-%d %H:%M")
+            st.dataframe(hits, use_container_width=True, hide_index=True)
+
+    st.subheader("Dialogue acts")
+    intents, by_user = ai_insights.intent_table(df, view_user)
+    if intents.empty:
+        st.info("No messages to classify.")
+        return
+    fig = px.pie(intents, names="intent", values="messages", hole=0.4, title="Intent mix")
+    st.plotly_chart(style_fig(fig), use_container_width=True)
+    if view_user == "Overall" and not by_user.empty:
+        fig = px.bar(by_user, x="user", y="messages", color="intent", title="Intents by member")
+        st.plotly_chart(style_fig(fig), use_container_width=True)
+
+
 with st.sidebar:
     st.title("💬 Chat Analyzer")
     st.caption("Turn a WhatsApp export into interview-ready insights.")
@@ -395,8 +507,8 @@ elif df is None and source == "Upload export" and uploaded_file is None:
         <div class="hero-card">
             <h1>WhatsApp Chat Analyzer</h1>
             <p>
-                Upload a chat export or load the built-in sample to explore activity heatmaps,
-                member comparisons, VADER sentiment, reply-time analytics, and searchable history.
+                Upload a chat export or load the built-in sample to explore activity, VADER sentiment,
+                local TF-IDF topics, semantic search, and extractive Q&amp;A — no API key required.
             </p>
         </div>
         """,
@@ -428,7 +540,9 @@ else:
                 f"Parsed {len(df):,} messages. Word cloud, emojis, and sentiment use a "
                 f"{helper.NLP_SAMPLE_ROWS:,}-message sample so Streamlit Cloud stays within RAM."
             )
-        tabs = st.tabs(["Overview", "Activity", "Members", "Content", "Sentiment", "Insights", "Explorer"])
+        tabs = st.tabs(
+            ["Overview", "Activity", "Members", "Content", "Sentiment", "Insights", "AI Recap", "Topics", "Explorer"]
+        )
         with tabs[0]:
             render_overview(selected_user, df)
         with tabs[1]:
@@ -442,6 +556,10 @@ else:
         with tabs[5]:
             render_insights(selected_user, df)
         with tabs[6]:
+            render_ai_recap(selected_user, df)
+        with tabs[7]:
+            render_topics(selected_user, df)
+        with tabs[8]:
             render_explorer(selected_user, df)
 
 st.sidebar.markdown(

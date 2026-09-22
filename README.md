@@ -13,6 +13,8 @@ Built for a portfolio: it is not only charts, it is a small end-to-end data prod
 - **Content**: word cloud, frequent words, emoji mix, longest messages
 - **Sentiment**: VADER scores overall, by day, and by member
 - **Insights**: who starts conversations after a quiet gap, median reply time
+- **AI Recap (local)**: extractive summary, ask-the-chat Q&A with citations, tension timeline, activity anomalies, writing-script mix — no API key
+- **Topics**: NMF topic discovery, TF-IDF semantic search, dialogue-act mix (question / plan / humor / …)
 - **Explorer**: keyword search and CSV download
 - **Sample chat** so anyone can demo the app without uploading a personal backup
 
@@ -31,7 +33,7 @@ The live app accepts **up to 400 MB** (Streamlit’s default is 200 MB). Zip/med
 
 ## Tech stack
 
-Python, Pandas, Streamlit, Plotly, Matplotlib, WordCloud, VADER sentiment, URLExtract, emoji
+Python, Pandas, Streamlit, Plotly, scikit-learn (TF-IDF / NMF), Matplotlib, WordCloud, VADER sentiment, URLExtract, emoji
 
 ## Resume bullets you can use
 
