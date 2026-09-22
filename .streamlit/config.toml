@@ -1,3 +1,8 @@
+[server]
+# Above Streamlit's 200MB default so large Without-media .txt exports can upload.
+maxUploadSize = 400
+maxMessageSize = 400
+
 [theme]
 primaryColor = "#25D366"
 backgroundColor = "#0E1117"

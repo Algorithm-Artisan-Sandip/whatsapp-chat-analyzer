@@ -18,6 +18,7 @@ PLOTLY_LAYOUT = dict(
     margin=dict(l=20, r=20, t=40, b=20),
     font=dict(color="#FAFAFA"),
 )
+MAX_UPLOAD_MB = 400
 ACCENT = "#25D366"
 
 st.markdown(
@@ -59,9 +60,40 @@ def load_chat(raw_text):
     return df
 
 
-@st.cache_data(show_spinner=False)
-def parse_uploaded(raw_bytes):
-    return load_chat(raw_bytes.decode("utf-8"))
+def validate_upload(uploaded_file):
+    name = (uploaded_file.name or "").lower()
+    size = int(getattr(uploaded_file, "size", 0) or 0)
+    size_mb = size / (1024 * 1024)
+    if name.endswith((".zip", ".opus", ".jpg", ".jpeg", ".png", ".mp4", ".pdf", ".webp")):
+        return "Upload the WhatsApp .txt export (Without media), not a zip or media file."
+    if size_mb > MAX_UPLOAD_MB:
+        return (
+            f"This file is {size_mb:.1f} MB. The app accepts up to {MAX_UPLOAD_MB} MB. "
+            "Export the chat Without media, or run locally with a larger limit."
+        )
+    if hasattr(uploaded_file, "seek"):
+        uploaded_file.seek(0)
+        magic = uploaded_file.read(4)
+        uploaded_file.seek(0)
+        if magic.startswith(preprocessor.ZIP_MAGIC):
+            return "This looks like a zip/media export. Upload the .txt file from WhatsApp instead."
+    return None
+
+
+def parse_uploaded_file(uploaded_file):
+    sig = (uploaded_file.name, int(getattr(uploaded_file, "size", 0) or 0))
+    if st.session_state.get("chat_sig") != sig:
+        size_mb = (sig[1] / (1024 * 1024)) if sig[1] else 0
+        with st.spinner(f"Parsing {uploaded_file.name} ({size_mb:.1f} MB). Large chats are read in chunks..."):
+            try:
+                parsed = preprocessor.preprocessor_from_file(uploaded_file)
+            except ValueError as exc:
+                if str(exc) == "zip":
+                    return None, "This looks like a zip/media export. Upload the .txt file instead."
+                raise
+        st.session_state.chat_sig = sig
+        st.session_state.chat_df = parsed
+    return st.session_state.chat_df, None
 
 
 @st.cache_data(show_spinner=False)
@@ -246,6 +278,8 @@ def render_sentiment(view_user, df):
     c2.metric("Positive", f"{summary['positive_pct']}%")
     c3.metric("Neutral", f"{summary['neutral_pct']}%")
     c4.metric("Negative", f"{summary['negative_pct']}%")
+    if len(helper.filter_user(df, view_user)) > helper.NLP_SAMPLE_ROWS:
+        st.caption(f"Large chat: sentiment is estimated from a random sample of {helper.NLP_SAMPLE_ROWS:,} messages.")
 
     if summary["by_day"].empty:
         st.info("Not enough text for sentiment analysis.")
@@ -314,6 +348,9 @@ def render_explorer(view_user, df):
 
     st.subheader("Export")
     export_df = helper.filter_user(helper.export_frame(df), view_user)
+    if len(export_df) > helper.EXPORT_MAX_ROWS:
+        st.caption(f"CSV export is capped at {helper.EXPORT_MAX_ROWS:,} rows so the browser does not run out of memory.")
+        export_df = export_df.head(helper.EXPORT_MAX_ROWS)
     csv = export_df.to_csv(index=False).encode("utf-8")
     st.download_button(
         "Download filtered chat as CSV",
@@ -329,19 +366,30 @@ with st.sidebar:
     source = st.radio("Data source", ["Upload export", "Try sample chat"], index=0)
     uploaded_file = None
     if source == "Upload export":
-        uploaded_file = st.file_uploader("WhatsApp .txt export", type=["txt"])
+        uploaded_file = st.file_uploader(
+            "WhatsApp .txt export",
+            type=["txt"],
+            help=f"Up to {MAX_UPLOAD_MB} MB. Use Export chat → Without media. Zip/media backups are rejected.",
+        )
         st.markdown(
-            "<small>WhatsApp → Chat → Export chat → Without media</small>",
+            f"<small>WhatsApp → Chat → Export chat → Without media · max {MAX_UPLOAD_MB} MB</small>",
             unsafe_allow_html=True,
         )
 
 df = None
+upload_error = None
 if source == "Try sample chat":
     df = parse_sample()
 elif uploaded_file is not None:
-    df = parse_uploaded(uploaded_file.getvalue())
+    upload_error = validate_upload(uploaded_file)
+    if upload_error is None:
+        df, upload_error = parse_uploaded_file(uploaded_file)
+        if df is not None and df.empty:
+            df = None
 
-if df is None and source == "Upload export" and uploaded_file is None:
+if upload_error:
+    st.error(upload_error)
+elif df is None and source == "Upload export" and uploaded_file is None:
     st.markdown(
         """
         <div class="hero-card">
@@ -370,11 +418,16 @@ else:
         picked = st.date_input("Date range", value=(min_day, max_day), min_value=min_day, max_value=max_day)
         if isinstance(picked, tuple) and len(picked) == 2:
             start_day, end_day = picked
-            df = df[(df["only_date"] >= start_day) & (df["only_date"] <= end_day)].copy()
+            df = df.loc[(df["only_date"] >= start_day) & (df["only_date"] <= end_day)]
 
     if df.empty:
         st.warning("No messages in that date range.")
     else:
+        if len(df) > helper.NLP_SAMPLE_ROWS:
+            st.caption(
+                f"Parsed {len(df):,} messages. Word cloud, emojis, and sentiment use a "
+                f"{helper.NLP_SAMPLE_ROWS:,}-message sample so Streamlit Cloud stays within RAM."
+            )
         tabs = st.tabs(["Overview", "Activity", "Members", "Content", "Sentiment", "Insights", "Explorer"])
         with tabs[0]:
             render_overview(selected_user, df)

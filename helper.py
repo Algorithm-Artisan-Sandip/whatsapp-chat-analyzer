@@ -19,14 +19,27 @@ def _stop_words():
     return _STOP_WORDS_CACHE
 
 
+NLP_SAMPLE_ROWS = 30_000
+EXPORT_MAX_ROWS = 75_000
+
+
 def filter_user(df, selected_user):
     if selected_user != "Overall":
-        return df[df["user"] == selected_user].copy()
-    return df.copy()
+        return df.loc[df["user"] == selected_user]
+    return df
 
 
 def human_messages(df):
-    return df[df["user"] != "group_notification"].copy()
+    return df.loc[df["user"] != "group_notification"]
+
+
+def sample_text_rows(df, cap=NLP_SAMPLE_ROWS):
+    """Cap expensive NLP (sentiment, word cloud, emoji scan) on huge chats."""
+    if df.empty:
+        return df, False
+    if len(df) <= cap:
+        return df, False
+    return df.sample(n=cap, random_state=42), True
 
 
 def fetch_stats(selected_user, df):
@@ -34,11 +47,11 @@ def fetch_stats(selected_user, df):
     total_messages = view.shape[0]
     words = int(view["word_count"].sum()) if "word_count" in view else 0
     media_messages = int(view["is_media"].sum()) if "is_media" in view else 0
-    links = []
-    for message in view["message"]:
-        if isinstance(message, str):
-            links.extend(_EXTRACTOR.find_urls(message))
-    return total_messages, words, media_messages, len(links)
+    if "link_count" in view.columns:
+        links = int(view["link_count"].sum())
+    else:
+        links = sum(len(_EXTRACTOR.find_urls(m)) for m in view["message"] if isinstance(m, str))
+    return total_messages, words, media_messages, links
 
 
 def overview_metrics(selected_user, df):
@@ -100,11 +113,16 @@ def user_leaderboard(df):
 
     rows = []
     total = people.shape[0]
-    for user, group in people.groupby("user"):
-        emojis = []
-        for message in group["message"]:
-            if isinstance(message, str):
-                emojis.extend(item["emoji"] for item in emoji.emoji_list(message))
+    grouped = people.groupby("user", observed=True)
+    for user, group in grouped:
+        if "emoji_count" in group.columns:
+            emoji_total = int(group["emoji_count"].sum())
+        else:
+            emojis = []
+            for message in group["message"]:
+                if isinstance(message, str):
+                    emojis.extend(item["emoji"] for item in emoji.emoji_list(message))
+            emoji_total = len(emojis)
         text = group[~group["is_media"] & ~group["is_deleted"]]
         rows.append(
             {
@@ -112,7 +130,7 @@ def user_leaderboard(df):
                 "messages": int(group.shape[0]),
                 "words": int(group["word_count"].sum()),
                 "media": int(group["is_media"].sum()),
-                "emojis": len(emojis),
+                "emojis": emoji_total,
                 "avg_words": round(float(text["word_count"].mean()) if not text.empty else 0.0, 2),
                 "percent": round(group.shape[0] / total * 100, 2),
             }
@@ -123,15 +141,16 @@ def user_leaderboard(df):
 def create_wordcloud(selected_user, df):
     view = filter_user(df, selected_user)
     stop_words = _stop_words()
-    temp = view[(view["user"] != "group_notification") & ~view["is_media"] & ~view["is_deleted"]].copy()
+    temp = view[(view["user"] != "group_notification") & ~view["is_media"] & ~view["is_deleted"]]
+    temp, _ = sample_text_rows(temp)
     if temp.empty:
         return None
 
     def remove_stop_words(message):
         return " ".join(word for word in str(message).lower().split() if word not in stop_words)
 
-    temp["clean"] = temp["message"].apply(remove_stop_words)
-    text = temp["clean"].str.cat(sep=" ").strip()
+    cleaned = temp["message"].map(remove_stop_words)
+    text = cleaned.str.cat(sep=" ").strip()
     if not text:
         return None
     wc = WordCloud(width=800, height=400, min_font_size=10, background_color="white", colormap="viridis")
@@ -142,6 +161,7 @@ def most_common_words(selected_user, df):
     view = filter_user(df, selected_user)
     stop_words = _stop_words()
     temp = view[(view["user"] != "group_notification") & ~view["is_media"] & ~view["is_deleted"]]
+    temp, _ = sample_text_rows(temp)
     words = []
     for message in temp["message"]:
         for word in str(message).lower().split():
@@ -152,6 +172,7 @@ def most_common_words(selected_user, df):
 
 def emoji_helper(selected_user, df):
     view = filter_user(df, selected_user)
+    view, _ = sample_text_rows(view)
     emojis = []
     for message in view["message"]:
         if not isinstance(message, str):
@@ -301,9 +322,11 @@ def conversation_starters(df, gap_hours=6):
 
 def sentiment_table(selected_user, df):
     view = filter_user(df, selected_user)
-    text = view[(view["user"] != "group_notification") & ~view["is_media"] & ~view["is_deleted"]].copy()
+    text = view[(view["user"] != "group_notification") & ~view["is_media"] & ~view["is_deleted"]]
+    text, _ = sample_text_rows(text)
     if text.empty:
         return text
+    text = text.copy()
     scores = text["message"].map(lambda m: _SENTIMENT.polarity_scores(str(m)))
     text["compound"] = scores.map(lambda s: s["compound"])
     text["positive"] = scores.map(lambda s: s["pos"])
@@ -363,7 +386,7 @@ def search_messages(df, query, selected_user="Overall"):
         return view[["date", "user", "message"]].head(50)
     q = str(query).strip()
     matches = view[view["message"].str.contains(q, case=False, na=False, regex=False)]
-    return matches[["date", "user", "message"]]
+    return matches[["date", "user", "message"]].head(500)
 
 
 def export_frame(df):

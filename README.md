@@ -27,6 +27,8 @@ Open the sidebar, choose **Try sample chat**, or export a real chat:
 
 WhatsApp → Chat → **Export chat** → **Without media** → upload the `.txt` file.
 
+The live app accepts **up to 400 MB** (Streamlit’s default is 200 MB). Zip/media backups are rejected. Large chats are parsed in chunks; word cloud, emoji, and sentiment use a sample so Cloud RAM is not exhausted.
+
 ## Tech stack
 
 Python, Pandas, Streamlit, Plotly, Matplotlib, WordCloud, VADER sentiment, URLExtract, emoji
